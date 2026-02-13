@@ -4,7 +4,7 @@ An interactive visualization dashboard tracking the historical development and e
 
 ## 🚀 Live Demo
 You can view the live dashboard here:
-**(https://giovannipiocirillo.github.io/italy-railways-heritage/)**
+**https://giovannipiocirillo.github.io/italy-railways-heritage/**
 
 ## 📊 Features
 * **Interactive Map**: Explore the railway network using Leaflet.js.
@@ -16,12 +16,11 @@ You can view the live dashboard here:
 ## 📚 Data Sources & References
 This project is built upon historical data and geographical indices provided by the following research:
 
-* **Ciccarelli, C., & Groote, P.**
-  * *Railway diffusion and market integration in Italy.* (Data regarding the historical expansion and tracks of the Italian railways).
+### 📚 References
 
-* **Nunn, N., & Puga, D.**
-  * *Ruggedness: The blessing of bad geography in Africa.* (Review of Economics and Statistics, 2012).
-  * Used for Terrain/Ruggedness Index calculations and orography layers.
+* **Ciccarelli, C., & Groote, P.** (2017). Railway endowment in Italy's provinces, 1839-1913. *Rivista di storia economica*, (1), 45-88. https://doi.org/10.1410/86763
+
+* **Nunn, N., & Puga, D.** (2012). Ruggedness: The blessing of bad geography in Africa. *The Review of Economics and Statistics, 94*(1), 20–36. https://doi.org/10.1162/REST_a_00161
 
 ## 🛠️ Technologies Used
 * **HTML5 / CSS3**
