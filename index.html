@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sviluppo Ferroviario Italiano</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="dati.js"></script>
+
+    <style>
+        body { margin:0; padding:0; font-family: 'Roboto', sans-serif; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; background: #fff; }
+        
+        .ui-panel { 
+            position: absolute; bottom: 40px; left: 40px; z-index: 1000; 
+            background: rgba(255, 255, 255, 0.90); backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); 
+            width: 280px; border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* FOOTER ESTERNO */
+        .map-footer {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(5px);
+            padding: 5px 20px; border-radius: 20px; font-size: 11px; color: #555;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.4);
+            white-space: nowrap;
+        }
+        .map-footer a { color: #2980b9; text-decoration: none; font-weight: 500; }
+        .map-footer a:hover { text-decoration: underline; }
+        
+        h2 { margin: 0 0 5px 0; font-weight: 700; font-size: 24px; color: #2c3e50; text-align: center; }
+        h4 { margin: 15px 0 8px 0; font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+
+        #year-slider { -webkit-appearance: none; width: 100%; height: 5px; background: #ccc; border-radius: 5px; outline: none; margin: 15px 0; }
+        #year-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2980b9; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+
+        .switch-container { display: flex; align-items: center; margin-bottom: 15px; font-size: 13px; color: #34495e; cursor: pointer; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; margin-right: 10px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider-toggle:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-toggle { background-color: #3498db; }
+        input:checked + .slider-toggle:before { transform: translateX(14px); }
+
+        .legend-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 13px; color: #34495e; }
+        .legend-left { display: flex; align-items: center; }
+        .box { width: 16px; height: 16px; margin-right: 10px; border-radius: 4px; }
+        
+        .info-btn { background: #3498db; color: #fff; width: 20px; height: 20px; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .info-btn:hover { transform: scale(1.1); background: #2980b9; }
+
+        .mini-info { display: inline-block; background: #95a5a6; color: #fff; width: 15px; height: 15px; border-radius: 50%; text-align: center; line-height: 15px; font-size: 10px; font-weight: bold; cursor: help; margin-left: 8px; position: relative; }
+        .mini-info:hover::after { content: attr(data-tooltip); position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; white-space: pre-wrap; z-index: 9999; pointer-events: none; width: max-content; max-width: 200px; text-align: left; }
+        .mini-info:hover::before { content: ''; position: absolute; bottom: 18px; left: 50%; margin-left: -4px; border-width: 4px; border-style: solid; border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; }
+
+        .download-btn { width: 100%; padding: 10px; margin-top: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
+        .download-btn:hover { background: #219150; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; backdrop-filter: blur(3px); }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; width: 650px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); animation: fadeIn 0.3s ease-out; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; font-weight: bold; color: #aaa; cursor: pointer; }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -60%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="ui-panel">
+        <h2 id="year-label">1839</h2>
+        <input type="range" min="1839" max="1913" value="1839" id="year-slider">
+        
+        <div class="switch-container">
+            <label class="switch">
+                <input type="checkbox" id="single-year-mode" onchange="update()">
+                <span class="slider-toggle"></span>
+            </label>
+            <span>Solo linee aperte nell'anno</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 15px 0;">
+        
+        <h4>RUGGEDNESS (TRI) <div class="info-btn" onclick="openModal()">?</div></h4>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:transparent; border:1px dashed #aaa"></div> Bassa (< 0.8)</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#f1c40f"></div> Media (0.8 - 1.5)</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#e67e22"></div> Alta (1.5 - 3.5)</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#2c3e50"></div> Estrema (> 3.5)</div>
+        </div>
+
+        <h4>Linee Ferroviarie</h4>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#e74c3c; height:4px"></div> Primaria</div>
+            <div class="mini-info" data-tooltip="Linea di interesse nazionale&#10;(ex. L. 29 luglio 1879, n. 5002, 'Legge Baccarini').">i</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#1c39bb; height:4px"></div> Secondaria</div>
+            <div class="mini-info" data-tooltip="Linea di interesse locale, per collegare i centri urbani ai centri rurali&#10;(ex. L. 29 luglio 1879, n. 5002, 'Legge Baccarini').">i</div>
+        </div>
+    
+        <h4>Scartamento</h4>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#000000; height:4px"></div> Normale</div>
+            <div class="mini-info" data-tooltip="Distanza tra le facce interne delle rotaie standard (1435mm).">i</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-left"><div class="box" style="background:#000000; height:2px"></div> Ridotto</div>
+            <div class="mini-info" data-tooltip="Distanza tra le facce interne delle rotaie ridotta (950mm).">i</div>
+        </div>
+
+    </div>
+
+    <div class="map-footer">
+        A cura di <a href="https://www.linkedin.com/in/giovanni-pio-cirillo" target="_blank">Giovanni Pio Cirillo</a> | 
+        Dati: <a href="https://www.arcgis.com/home/item.html?id=d4fe94faf2e54518b3f421f19a137d4c" target="_blank">Ciccarelli & Groote (2017)</a> & <a href="https://diegopuga.org/data/rugged/" target="_blank">Nunn & Puga (2012)</a>
+    </div>
+
+    <div id="triModal" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div style="padding: 20px; background: #fff; border-radius: 12px;">
+                <div style="padding: 20px; background: rgba(236, 240, 241, 0.5); border-radius: 8px; font-size: 15px; line-height: 1.6; color: #444; border-left: 4px solid #3498db;">
+                    <strong style="display:block; margin-bottom: 5px; color: #2c3e50;">ℹ️ Cos'è il TRI?</strong>
+                    <p style="margin: 0 0 8px 0;">Il <b>TRI (Terrain Ruggedness Index)</b> misura la <i>"ruvidità (o asprezza)"</i> del terreno.</p>
+                    <ul style="padding-left: 15px; margin: 0 0 8px 0;">
+                        <li><b>Calcolo:</b> Per ogni cella (pixel) della mappa, si calcola la differenza di quota rispetto alle 8 celle vicine (griglia 3x3). Più le differenze sono alte, più il terreno appare impervio, più il TRI sale.</li>
+                        <li><b>Significato:</b> <br>TRI Basso = Terreno poco variabile o impervio (costi minimi).<br>TRI Alto = Terreno fortemente variabile e impervio (necessità di ponti e gallerie).</li>
+                    </ul>
+                    <div style="font-size: 10px; color: #7f8c8d; border-top: 1px solid #ccc; padding-top: 4px;">
+                        <b>Fonte:</b> Riley et al. (1999), adattato da Nunn & Puga (2012).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        function openModal() { document.getElementById('triModal').style.display = 'block'; }
+        function closeModal() { document.getElementById('triModal').style.display = 'none'; }
+        document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeModal(); });
+
+        const map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+        map.createPane('railwayPane');
+        map.getPane('railwayPane').style.zIndex = 650;
+
+        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri' });
+        const lightMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: 'CartoDB' }).addTo(map);
+
+        // MODIFICA: Uso la variabile ruggedData caricata dal file dati.js
+        const ruggedLayer = L.geoJson(ruggedData, {
+            style: (f) => ({ fillColor: f.properties.class === 3 ? '#2c3e50' : f.properties.class === 2 ? '#e67e22' : '#f1c40f', weight: 0, fillOpacity: f.properties.class === 3 ? 0.7 : 0.5 }),
+            interactive: false
+        }).addTo(map);
+
+        // MODIFICA: Uso la variabile railData caricata dal file dati.js
+        // railData è già definita globalmente, quindi non serve dichiararla di nuovo
+        let railLayer = L.layerGroup().addTo(map);
+
+        function update() {
+            const year = parseInt(document.getElementById('year-slider').value);
+            const isSingleYear = document.getElementById('single-year-mode').checked;
+            document.getElementById('year-label').innerText = year;
+            railLayer.clearLayers();
+            L.geoJson(railData, {
+                pane: 'railwayPane',
+                filter: (f) => isSingleYear ? f.properties.YearConstr == year : f.properties.YearConstr <= year,
+                style: (f) => ({
+                    color: f.properties.MAINLIGHT.toLowerCase().includes('main') ? '#e74c3c' : '#1c39bb',
+                    weight: f.properties.STANDNARRO.toLowerCase().includes('stan') ? 3.5 : 2,
+                    opacity: 1
+                }),
+                onEachFeature: (f, l) => {
+                    const p = f.properties;
+                    l.bindPopup(`<b>${p.TRUNK}</b><br>Anno: ${p.YearConstr}<br>Tipo: ${p.MAINLIGHT}`);
+                }
+            }).addTo(railLayer);
+        }
+
+        L.control.layers({ "Mappa Plain": lightMap, "Satellite": satelliteMap }, { "Ruggedness": ruggedLayer, "Ferrovie": railLayer }, { position: 'topright', collapsed: false }).addTo(map);
+        document.getElementById('year-slider').addEventListener('input', update);
+        update();
+    </script>
+</body>
+</html>
