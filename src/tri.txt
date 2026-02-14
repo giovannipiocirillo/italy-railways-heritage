@@ -1,1 +1,0 @@
-Download the file from https://diegopuga.org/data/rugged/tri.zip. It is an ASCII Grid compressed into a 600MB ZIP file (approximately 3GB uncompressed).
