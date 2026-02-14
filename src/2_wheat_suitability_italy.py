@@ -4,8 +4,8 @@ import geopandas as gpd
 import numpy as np
 
 # --- CONFIGURAZIONE ---
-INPUT_WHEAT = "sxLr0_whe.tif" # The file downloaded from FAO GAEZ
-OUTPUT_TIF = "italia_wheat_clipped.tif"
+INPUT_WHEAT = "wheat-suitability/sxLr0_whe.tif" # The file downloaded from FAO GAEZ
+OUTPUT_TIF = "wheat-suitability/italy_wheat_clipped.tif"
 # ISTAT Italy's borders
 URL_CONFINI = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"
 
