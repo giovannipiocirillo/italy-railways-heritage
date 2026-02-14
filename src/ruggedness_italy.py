@@ -4,8 +4,8 @@ import geopandas as gpd
 import numpy as np
 
 # --- CONFIGURATION ---
-INPUT_TRI = "tri.txt"  # File downloader from Puga website
-OUTPUT_TIF = "italia_ruggedness_clipped.tif"
+INPUT_TRI = "ruggedness/tri.txt"  # File downloader from Puga website
+OUTPUT_TIF = "ruggedness/italy_ruggedness_clipped.tif"
 # ISTAT Italy's borders
 URL_CONFINI = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"
 
