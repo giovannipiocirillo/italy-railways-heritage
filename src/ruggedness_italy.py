@@ -41,7 +41,7 @@ def process_ruggedness():
                 "nodata": -9999
             })
 
-            # Writing new cropped file
+            # Writing new clipped file
             with rasterio.open(OUTPUT_TIF, "w", **out_meta) as dest:
                 dest.write(out_image)
                 
