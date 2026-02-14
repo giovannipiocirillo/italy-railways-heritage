@@ -1,4 +1,4 @@
-# Italian Railway Development Dashboard (1839-1913) 🇮🇹🚂
+# Italian Railway Development Dashboard (1839-1913) 🚂
 
 An interactive visualization dashboard tracking the historical development of the Italian railway network. This project provides a unique geographical and economic analysis, overlaying infrastructure growth with physical constraints (**Terrain Ruggedness**) and agricultural potential (**Wheat Suitability**).
 
