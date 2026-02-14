@@ -15,7 +15,7 @@ View the live dashboard here:
     * **Gauge:** Standard (1435mm) vs. Narrow (950mm).
     * **Length:** Precise segment length in meters.
 
-### 2. Advanced Filtering & Control
+### 2. Filtering & Control
 * **Dual-Panel Interface:** A modern "Glassmorphism" UI with separate panels for narrative controls and operational filters.
 * **Smart Filters:** Toggle specific network types independently:
     * Primary vs. Secondary lines.
@@ -27,18 +27,17 @@ Unlike standard maps, this dashboard offers deep context layers to understand *w
 * **🏔️ Terrain Ruggedness Index (TRI):** Visualizes land unevenness based on Nunn & Puga (2012). Helps explain engineering challenges (tunnels, viaducts) and the adoption of narrow gauge in mountainous areas.
 * **🌾 Wheat Suitability (FAO GAEZ):** Shows historical agricultural potential (Low Input/Rain-fed). Highlights the economic drive to connect the "granaries of Italy" (e.g., Puglia, Sicily) to ports and major cities.
 
-### 4. Educational Context
-* **Info Modals:** Integrated pop-ups explaining historical context (e.g., the legislation behind Secondary networks) and technical concepts (TRI calculation, Gauge implications).
+### 🚂 Railways Data
+* **Reference:** Ciccarelli, C., & Groote, P. (2017). Railway endowment in Italy's provinces, 1839-1913. *Rivista di storia economica*, (1), 45-88.
+* **Dataset:** [Download via ArcGIS](https://www.arcgis.com/home/item.html?id=d4fe94faf2e54518b3f421f19a137d4c)
 
-## 📚 Data Sources & References
+### 🏔️ Orography (Ruggedness)
+* **Reference:** Nunn, N., & Puga, D. (2012). Ruggedness: The blessing of bad geography in Africa. *The Review of Economics and Statistics*, 94(1), 20–36.
+* **Dataset:** [Download via diegopuga.org](https://diegopuga.org/data/rugged/)
 
-This project aggregates and processes data from high-quality economic history research and geographical institutes:
-
-* **Railways Data:** *Ciccarelli, C., & Groote, P.* (2017). Railway endowment in Italy's provinces, 1839-1913. *Rivista di storia economica*. [DOI: 10.1410/86763](https://doi.org/10.1410/86763)
-
-* **Orography (Ruggedness):** *Nunn, N., & Puga, D.* (2012). Ruggedness: The blessing of bad geography in Africa. *The Review of Economics and Statistics*. [DOI: 10.1162/REST_a_00161](https://doi.org/10.1162/REST_a_00161)
-
-* **Agriculture (Wheat):** *FAO & IIASA.* Global Agro-Ecological Zones (GAEZ v4). Data Portal. [gaez.fao.org](https://gaez.fao.org)
+### 🌾 Agriculture (Wheat)
+* **Reference:** FAO & IIASA. Global Agro-Ecological Zones (GAEZ v4).
+* **Dataset:** [Data Portal (gaez.fao.org)](https://gaez.fao.org)
 
 ## 🛠️ Technical Pipeline
 
