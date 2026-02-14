@@ -27,6 +27,8 @@ Unlike standard maps, this dashboard offers deep context layers to understand *w
 * **🏔️ Terrain Ruggedness Index (TRI):** Visualizes land unevenness based on Nunn & Puga (2012). Helps explain engineering challenges (tunnels, viaducts) and the adoption of narrow gauge in mountainous areas.
 * **🌾 Wheat Suitability (FAO GAEZ):** Shows historical agricultural potential (Low Input/Rain-fed). Highlights the economic drive to connect the "granaries of Italy" (e.g., Puglia, Sicily) to ports and major cities.
 
+## 🗂️ Data sources
+
 ### 🚂 Railways Data
 * **Reference:** Ciccarelli, C., & Groote, P. (2017). Railway endowment in Italy's provinces, 1839-1913. *Rivista di storia economica*, (1), 45-88.
 * **Dataset:** [Download via ArcGIS](https://www.arcgis.com/home/item.html?id=d4fe94faf2e54518b3f421f19a137d4c)
