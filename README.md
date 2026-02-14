@@ -11,21 +11,21 @@ View the live dashboard here:
 ### 1. Interactive Historical Map
 * **Time-Travel Slider:** Visualize the network expansion year by year from 1839 to 1913.
 * **Data Inspection:** Click on any railway segment to view precise details:
+    * **Length:** Precise segment length in meters.
     * **Type:** Primary vs. Secondary lines (based on *Legge Baccarini*).
     * **Gauge:** Standard (1435mm) vs. Narrow (950mm).
-    * **Length:** Precise segment length in meters.
 
 ### 2. Filtering & Control
-* **Dual-Panel Interface:** A modern "Glassmorphism" UI with separate panels for narrative controls and operational filters.
+* **Dual-Panel Interface:** A modern "Glassmorphism" UI with separate panels for map key and operational filters.
 * **Smart Filters:** Toggle specific network types independently:
     * Primary vs. Secondary lines.
     * Standard vs. Narrow gauge tracks.
 * **Basemap Switcher:** Toggle seamlessly between a clean Topographic view and Satellite imagery.
 
 ### 3. Geographical & Economic Context Layers
-Unlike standard maps, this dashboard offers deep context layers to understand *why* railways were built where they were:
+This dashboard tries to offer exogenous context layers to understand *why* railways were built where they were:
 * **🏔️ Terrain Ruggedness Index (TRI):** Visualizes land unevenness based on Nunn & Puga (2012). Helps explain engineering challenges (tunnels, viaducts) and the adoption of narrow gauge in mountainous areas.
-* **🌾 Wheat Suitability (FAO GAEZ):** Shows historical agricultural potential (Low Input/Rain-fed). Highlights the economic drive to connect the "granaries of Italy" (e.g., Puglia, Sicily) to ports and major cities.
+* **🌾 Wheat Suitability (FAO GAEZ):** Shows historical agricultural potential (Low Input/Rain-fed). Highlights the economic drive to connect the "granaries of Italy" to ports and major cities.
 
 ## 🗂️ Data sources
 
