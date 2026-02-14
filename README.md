@@ -9,7 +9,7 @@ View the live dashboard here:
 ## 🗺️ Key Features
 
 ### 1. Interactive Historical Map
-* **Time-Travel Slider:** Visualize the network expansion year by year from 1839 (Napoli-Portici) to 1913.
+* **Time-Travel Slider:** Visualize the network expansion year by year from 1839 to 1913.
 * **Data Inspection:** Click on any railway segment to view precise details:
     * **Type:** Primary vs. Secondary lines (based on *Legge Baccarini*).
     * **Gauge:** Standard (1435mm) vs. Narrow (950mm).
