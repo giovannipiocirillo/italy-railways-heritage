@@ -404,7 +404,7 @@ def main():
     }
 
     window.onload = function() {
-        if(typeof DB === 'undefined') { alert("Esegui Python prima per generare db_dashboard.js!"); return; }
+        if(typeof DB === 'undefined') { alert("Esegui Python prima per generare db_stats_dashboard.js!"); return; }
         
         // Popola Regioni
         const selReg = document.getElementById('sel-reg');
