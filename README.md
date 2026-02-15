@@ -61,4 +61,4 @@ The data visualization is the result of a custom **Python** processing pipeline:
     * **HTML5/CSS3:** Responsive "Glassmorphism" UI design.
 
 ## 📄 License
-This project is open for educational and research purposes. Please credit the original data authors (Ciccarelli & Groote, Nunn & Puga, FAO) when using the datasets derived from this dashboard.
+This project is open for educational and research purposes. Please credit the original data authors (Ciccarelli & Groote, Nunn & Puga, FAO, OpenPolis) when using the datasets derived from this dashboard.
