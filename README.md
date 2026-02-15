@@ -50,11 +50,12 @@ A dedicated Business Intelligence view for quantitative analysis:
 
 The data visualization is the result of a custom **Python** processing pipeline:
 
-1. **Data Processing (Python/Pandas/GeoPandas):** * Cleaning and standardizing historical shapefiles.
+1. **Data Processing (Python/Pandas/GeoPandas):**
+    * Cleaning and standardizing historical shapefiles.
     * Clipping global raster files (TRI and GAEZ) exactly to the Italian borders using `rasterio`.
     * Performing exact geometric cuts (overlay intersection) to assign track lengths to specific provinces.
     * Calculating distances from ~7,900 municipality centroids to the evolving railway network.
-2. **Web Implementation:**
+3. **Web Implementation:**
     * **Leaflet.js:** For high-performance rendering of vector datasets and interactive mapping.
     * **Chart.js:** For dynamic rendering of infrastructure growth and accessibility trends.
     * **HTML5/CSS3:** Responsive "Glassmorphism" UI design.
