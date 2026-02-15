@@ -12,7 +12,7 @@ FILE_WHEAT_CLIPPED = "wheat-suitability/italy_wheat_clipped.tif"
 
 # --- OUTPUT FILE CONFIGURATION ---
 OUTPUT_HTML = "index.html"
-OUTPUT_JS = "dati.js"
+OUTPUT_JS = "db_railways_trunks.js"
 
 def round_floats(o):
     if isinstance(o, float): return round(o, 4)
@@ -141,10 +141,11 @@ html_content = """
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Sviluppo Ferroviario Italiano (1839-1913)</title>
+    <title>Mappa - Sviluppo Ferroviario Italiano (1839-1913)</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="dati.js"></script>
+    <script src="db_railways_trunks.js"></script>
 
     <style>
         body { margin:0; padding:0; font-family: 'Roboto', sans-serif; overflow: hidden; background: #f0f0f0; }
@@ -228,8 +229,7 @@ html_content = """
         }
         .map-footer a { color: #2980b9; text-decoration: none; font-weight: 500; }
 
-        /* LINK STATISTICHE */
-        .stats-btn {
+        .link-btn {
             position: absolute;
             bottom: 40px; /* Allineato al pannello sinistro */
             right: 20px; 
@@ -248,7 +248,7 @@ html_content = """
             gap: 8px;
             border: 1px solid rgba(255,255,255,0.2);
         }
-        .stats-btn:hover {
+        .link-btn:hover {
             background: #34495e;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.25);
@@ -318,7 +318,7 @@ html_content = """
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
 
-        <h4>Livelli Dati</h4>
+        <h4>Livelli</h4>
         <div class="checkbox-row">
             <input type="checkbox" id="layer-rugged" onchange="updateLayers()">
             <label for="layer-rugged">Ruggedness (TRI)</label>
@@ -354,13 +354,13 @@ html_content = """
         </div>
     </div>
 
-    <a href="railways_stats.html" target="_blank" class="stats-btn">
+    <a href="railways_stats.html" target="_blank" class="link-btn">
         📊 Vai alle Statistiche
     </a>
 
     <div class="map-footer">
         A cura di <a href="https://www.linkedin.com/in/giovanni-pio-cirillo" target="_blank">Giovanni Pio Cirillo</a> | 
-        Dati: <a href="https://www.rivisteweb.it/doi/10.1410/86763" target="_blank">Ciccarelli & Groote (2017)</a>, <a href="https://direct.mit.edu/rest/article-abstract/94/1/20/57988/Ruggedness-The-Blessing-of-Bad-Geography-in-Africa?redirectedFrom=fulltext" target="_blank">Nunn & Puga (2012)</a>, <a href="https://gaez.fao.org" target="blank">FAO GAEZ v4</a>
+        Dati: <a href="https://www.rivisteweb.it/doi/10.1410/86763" target="_blank">Ciccarelli & Groote (2017)</a>, <a href="https://direct.mit.edu/rest/article-abstract/94/1/20/57988/Ruggedness-The-Blessing-of-Bad-Geography-in-Africa?redirectedFrom=fulltext" target="_blank">Nunn & Puga (2012)</a>, <a href="https://gaez.fao.org" target="blank">FAO GAEZ v4</a>, <a href="https://github.com/openpolis/geojson-italy" target="blank">OpenPolis</a>
     </div>
 
     <div id="infoModal" class="modal-overlay" onclick="closeModal()">
