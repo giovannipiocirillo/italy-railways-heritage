@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <script src="db__stats_dashboard.js"></script>
+    <script src="db_stats_dashboard.js"></script>
 
     <style>
         :root {
@@ -234,7 +234,7 @@
     }
 
     window.onload = function() {
-        if(typeof DB === 'undefined') { alert("Esegui Python prima per generare db_dashboard.js!"); return; }
+        if(typeof DB === 'undefined') { alert("Esegui Python prima per generare db_stats_dashboard.js!"); return; }
         
         // Popola Regioni
         const selReg = document.getElementById('sel-reg');
