@@ -141,7 +141,7 @@ html_content = """
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Sviluppo Ferroviario Italiano</title>
+    <title>Sviluppo Ferroviario Italiano (1839-1913)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="dati.js"></script>
@@ -227,6 +227,32 @@ html_content = """
             white-space: nowrap; pointer-events: auto;
         }
         .map-footer a { color: #2980b9; text-decoration: none; font-weight: 500; }
+
+        /* LINK STATISTICHE */
+        .stats-btn {
+            position: absolute;
+            bottom: 40px; /* Allineato al pannello sinistro */
+            right: 20px; 
+            z-index: 1000;
+            background: #2c3e50;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stats-btn:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
 
         /* MODAL */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 2000; backdrop-filter: blur(3px); }
@@ -327,6 +353,10 @@ html_content = """
             <label for="filter-narrow">Scartamento Ridotto</label>
         </div>
     </div>
+
+    <a href="railways_stats.html" target="_blank" class="stats-btn">
+        📊 Vai alle Statistiche
+    </a>
 
     <div class="map-footer">
         A cura di <a href="https://www.linkedin.com/in/giovanni-pio-cirillo" target="_blank">Giovanni Pio Cirillo</a> | 
@@ -525,7 +555,7 @@ html_content = """
                     
                     return {
                         color: isPrimary ? '#e74c3c' : '#1c39bb', 
-                        weight: isStd ? 3 : 2.5,                     
+                        weight: isStd ? 3 : 2.5,                    
                         dashArray: isStd ? '' : '4, 4',             
                         opacity: 1
                     };
