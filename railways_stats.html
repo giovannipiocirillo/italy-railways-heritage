@@ -17,14 +17,106 @@
             --color-secondary: #3498db; 
             --bg-sidebar: #2c3e50;
             --text-sidebar: #ecf0f1;
+            
+            --sidebar-width: 280px;
+            --sidebar-mini-width: 60px; /* Larghezza striscia */
         }
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        /* --- SIDEBAR BASE --- */
         .sidebar {
             position: fixed; top: 0; bottom: 0; left: 0; 
-            width: 280px; background-color: var(--bg-sidebar); color: var(--text-sidebar);
-            padding: 20px; overflow-y: auto; z-index: 1000;
+            width: var(--sidebar-width); 
+            background-color: var(--bg-sidebar); 
+            color: var(--text-sidebar);
+            padding: 20px 15px; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            z-index: 1000;
+            transition: width 0.3s ease, transform 0.3s ease;
+            display: flex; flex-direction: column;
         }
-        .main-content { margin-left: 280px; padding: 25px; height: 100vh; overflow-y: auto; }
+        
+        .main-content { 
+            margin-left: var(--sidebar-width); 
+            padding: 25px; 
+            min-height: 100vh; 
+            transition: margin-left 0.3s ease; 
+        }
+
+        /* --- DESKTOP MINIMIZED STATE (STRISCIA) --- */
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-mini-width);
+            padding: 20px 5px; /* Meno padding laterale */
+        }
+        
+        body.sidebar-collapsed .main-content {
+            margin-left: var(--sidebar-mini-width);
+        }
+        
+        /* Nascondi testi e controlli in modalità mini */
+        body.sidebar-collapsed .hide-on-mini {
+            display: none !important;
+            opacity: 0;
+        }
+        
+        /* Centra le icone in modalità mini */
+        body.sidebar-collapsed .nav-link {
+            text-align: center;
+            padding-left: 0; padding-right: 0;
+        }
+        body.sidebar-collapsed .nav-link i {
+            margin-right: 0 !important;
+            font-size: 1.2rem;
+        }
+        
+        /* Centra il toggle button in modalità mini */
+        body.sidebar-collapsed .sidebar-header {
+            justify-content: center !important;
+        }
+
+        /* --- MOBILE STYLES (< 992px) --- */
+        .mobile-toggle { display: none; }
+        
+        @media (max-width: 991.98px) {
+            /* Sidebar nascosta default su mobile */
+            .sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important; /* Sempre larga quando aperta su mobile */
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding-top: 70px;
+            }
+            
+            /* Bottone Toggle Mobile (Fluttuante) */
+            .mobile-toggle {
+                display: block;
+                position: fixed; top: 15px; left: 15px; z-index: 1100;
+                background-color: var(--color-primary); color: white;
+                border: none; border-radius: 5px; padding: 10px 15px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+            
+            /* Nascondi bottone desktop su mobile */
+            .desktop-toggle { display: none !important; }
+
+            /* Stato APERTO su Mobile */
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+            
+            /* Overlay */
+            .sidebar-overlay {
+                display: none;
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); z-index: 900;
+            }
+            body.sidebar-open .sidebar-overlay { display: block; }
+        }
+
+        /* --- COMPONENTS --- */
         .card-kpi {
             background: white; border: none; border-radius: 10px; padding: 20px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; position: relative;
@@ -37,71 +129,40 @@
         .section-view.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Helpers */
+        /* Controls */
         .sidebar .form-select, .sidebar .form-range { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; }
         .sidebar option { background: var(--bg-sidebar); }
         .nav-pills .nav-link.active { background-color: var(--color-primary); }
-        .nav-pills .nav-link { color: #ccc; }
+        .nav-pills .nav-link { color: #ccc; white-space: nowrap; overflow: hidden; }
 
-        /* INFO BUTTONS */
-        .info-btn {
-            color: #95a5a6; cursor: pointer; transition: color 0.2s; font-size: 0.9rem; margin-left: 8px;
-        }
+        .info-btn { color: #95a5a6; cursor: pointer; transition: color 0.2s; font-size: 0.9rem; margin-left: 8px; }
         .info-btn:hover { color: var(--color-secondary); }
 
-        /* LINK BUTTONS */
         .link-btn {
-            align-self: center;
-            z-index: 1000;
-            background: #2c3e50;
-            color: #fff;
-            text-decoration: none;
-            padding: 12px 20px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid rgba(255,255,255,0.2);
+            align-self: center; background: #2c3e50; color: #fff; text-decoration: none;
+            padding: 12px 20px; border-radius: 30px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2);
+            width: 100%; text-align: center; display: flex; justify-content: center; align-items: center; gap: 10px;
         }
-        .link-btn:hover {
-            background: #34495e;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-        }
+        .link-btn:hover { background: #34495e; color: #fff; transform: translateY(-2px); }
         
-        /* FOOTER */
-        .map-footer {
-            margin-top: 40px;
-            padding: 20px 0;
-            text-align: center;
-            font-size: 11px;
-            color: #7f8c8d;
-            border-top: 1px solid #ddd;
-            width: 100%;
-        }
+        .map-footer { margin-top: 40px; padding: 20px 0; text-align: center; font-size: 11px; color: #7f8c8d; border-top: 1px solid #ddd; }
         .map-footer a { color: #2980b9; text-decoration: none; font-weight: 500; }
 
-        /* MODAL STYLING */
-        .modal-custom {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-        }
-        .modal-custom-content {
-            background-color: #fefefe; margin: 10% auto; padding: 30px; border-radius: 15px;
-            width: 600px; max-width: 90%; box-shadow: 0 5px 30px rgba(0,0,0,0.3); position: relative;
-            animation: slideDown 0.3s ease-out;
-        }
+        /* MODAL */
+        .modal-custom { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .modal-custom-content { background-color: #fefefe; margin: 10% auto; padding: 30px; border-radius: 15px; width: 600px; max-width: 90%; animation: slideDown 0.3s; }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-modal:hover { color: #000; }
-        .formula-box { background: #f8f9fa; padding: 15px; border-left: 4px solid var(--color-secondary); margin: 15px 0; font-family: 'Courier New', monospace; color: #333; font-size: 0.95rem; }
+        .close-modal { color: #aaa; float: right; font-size: 28px; cursor: pointer; }
+        .formula-box { background: #f8f9fa; padding: 15px; border-left: 4px solid var(--color-secondary); margin: 15px 0; font-family: monospace; }
     </style>
 </head>
 <body>
+
+<div class="sidebar-overlay" onclick="toggleSidebarMobile()"></div>
+
+<button class="mobile-toggle" onclick="toggleSidebarMobile()">
+    <i class="fas fa-bars"></i>
+</button>
 
 <div id="infoModal" class="modal-custom" onclick="closeInfoModal(event)">
     <div class="modal-custom-content">
@@ -111,36 +172,54 @@
     </div>
 </div>
 
-<div class="sidebar d-flex flex-column">
-    <h5 class="mb-4 text-white"><i class="fas fa-train me-2"></i>Italy Railways Heritage - Statistiche</h5>
+<div class="sidebar">
+    <div class="sidebar-header d-flex justify-content-between align-items-center mb-4" style="min-height: 40px;">
+        <h5 class="text-white m-0 hide-on-mini" style="font-size: 1.1rem;"><i class="fas fa-train me-2"></i>Italy Railways</h5>
+        
+        <button class="btn btn-sm btn-outline-light desktop-toggle" onclick="toggleSidebarDesktop()" title="Riduci/Espandi">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <button class="btn btn-sm btn-outline-light d-lg-none" onclick="toggleSidebarMobile()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
     
     <div class="nav flex-column nav-pills mb-4">
-        <a class="nav-link active" href="#" onclick="setView('infra')"><i class="fas fa-chart-bar me-2"></i> Infrastruttura</a>
-        <a class="nav-link" href="#" onclick="setView('access')"><i class="fas fa-map-marked-alt me-2"></i> Accessibilità</a>
+        <a class="nav-link active" href="#" onclick="setView('infra')">
+            <i class="fas fa-chart-bar me-2"></i> <span class="hide-on-mini">Infrastruttura</span>
+        </a>
+        <a class="nav-link" href="#" onclick="setView('access')">
+            <i class="fas fa-map-marked-alt me-2"></i> <span class="hide-on-mini">Accessibilità</span>
+        </a>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label text-white-50 small">REGIONE</label>
-        <select id="sel-reg" class="form-select" onchange="onRegionChange()">
-            <option value="ALL">Tutta Italia</option>
-        </select>
+    <div class="hide-on-mini">
+        <div class="mb-3">
+            <label class="form-label text-white-50 small">REGIONE</label>
+            <select id="sel-reg" class="form-select" onchange="onRegionChange()">
+                <option value="ALL">Tutta Italia</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label text-white-50 small">PROVINCIA</label>
+            <select id="sel-prov" class="form-select" disabled onchange="updateDashboard()">
+                <option value="ALL">Tutte le Province</option>
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label text-white small">ANNO: <span id="lbl-year" class="fw-bold text-warning">1913</span></label>
+            <input type="range" class="form-range" id="range-year" min="1839" max="1913" value="1913" oninput="updateDashboard()">
+        </div>
     </div>
 
-    <div class="mb-4">
-        <label class="form-label text-white-50 small">PROVINCIA</label>
-        <select id="sel-prov" class="form-select" disabled onchange="updateDashboard()">
-            <option value="ALL">Tutte le Province</option>
-        </select>
+    <div class="mt-auto pt-3">
+        <a href="index.html" class="link-btn" title="Torna alla mappa">
+            <span>🗺️</span> <span class="hide-on-mini">Mappa</span>
+        </a>
     </div>
-
-    <div class="mb-2">
-        <label class="form-label text-white small">ANNO: <span id="lbl-year" class="fw-bold text-warning">1913</span></label>
-        <input type="range" class="form-range" id="range-year" min="1839" max="1913" value="1913" oninput="updateDashboard()">
-    </div>
-
-    <a href="index.html" class="link-btn">
-        🗺️ Torna alla mappa
-    </a>
 </div>
 
 <div class="main-content">
@@ -148,7 +227,7 @@
     <div id="view-infra" class="section-view active">
         <h3 class="fw-bold mb-4">Sviluppo Rete Ferroviaria</h3>
         
-        <div class="row mb-4">
+        <div class="row mb-4 g-3">
             <div class="col-md-4">
                 <div class="card-kpi border-start border-4 border-danger">
                     <small class="text-uppercase text-muted">Totale Costruito</small>
@@ -176,7 +255,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row g-3">
             <div class="col-lg-8"><div class="chart-container"><canvas id="chart-hist"></canvas></div></div>
             <div class="col-lg-4"><div class="chart-container"><canvas id="chart-pie"></canvas></div></div>
         </div>
@@ -190,7 +269,7 @@
             <canvas id="chart-access"></canvas>
         </div>
 
-        <div class="row">
+        <div class="row g-3 mt-2">
             <div class="col-md-6">
                 <div class="card-kpi border-bottom border-4 border-warning">
                     <div class="d-flex justify-content-between align-items-start">
@@ -223,6 +302,26 @@
     let charts = {};
     let currentView = 'infra';
 
+    // --- LOGICA SIDEBAR & RESPONSIVE ---
+    
+    // Desktop: Mini Sidebar Toggle
+    function toggleSidebarDesktop() {
+        document.body.classList.toggle('sidebar-collapsed');
+        resizeCharts();
+    }
+
+    // Mobile: Off-canvas Toggle
+    function toggleSidebarMobile() {
+        document.body.classList.toggle('sidebar-open');
+    }
+    
+    // Utility per ridimensionare i grafici quando cambia lo spazio
+    function resizeCharts() {
+        setTimeout(() => {
+            Object.values(charts).forEach(c => c.resize());
+        }, 300);
+    }
+
     // --- LOGICA MODAL INFO ---
     function showInfo(type) {
         const modal = document.getElementById('infoModal');
@@ -233,49 +332,32 @@
             title.innerHTML = "ℹ️ Calcolo Distanza Media Territoriale";
             body.innerHTML = `
                 <p>Questo indicatore misura il grado di penetrazione della ferrovia nel territorio selezionato (Regione o Provincia).</p>
-                
                 <strong>Metodologia:</strong>
                 <ul>
                     <li>Vengono considerati <b>tutti i Comuni</b> appartenenti all'area selezionata.</li>
-                    <li>Per ogni Comune, si calcola il <b>centroide geometrico</b> (il centro esatto).</li>
-                    <li>Si misura la distanza in linea d'aria (Euclidea) tra il centroide e il punto più vicino della rete ferroviaria esistente in quell'anno.</li>
+                    <li>Per ogni Comune, si calcola il <b>centroide geometrico</b>.</li>
+                    <li>Si misura la distanza in linea d'aria tra il centroide e il punto più vicino della rete ferroviaria.</li>
                     <li>Si calcola la media aritmetica di queste distanze.</li>
                 </ul>
-
-                <div class="formula-box">
-                    Formula:<br>
-                    D_media = (Σ dist(Centroide_i, Rete)) / N_comuni
-                </div>
-
-                <p class="text-muted small">Nota: Il calcolo utilizza la proiezione metrica EPSG:3035 (ETRS89-LAEA) per garantire la massima precisione delle distanze in metri.</p>
+                <div class="formula-box">D_media = (Σ dist(Centroide_i, Rete)) / N_comuni</div>
             `;
         } else {
             title.innerHTML = "ℹ️ Calcolo Distanza Capoluogo";
             body.innerHTML = `
-                <p>Questo indicatore misura l'isolamento del centro amministrativo principale rispetto alla rete ferroviaria.</p>
-                
+                <p>Misura l'isolamento del centro amministrativo principale.</p>
                 <strong>Metodologia:</strong>
                 <ul>
-                    <li>Si considera il <b>Capoluogo</b> (di Regione o di Provincia, a seconda della selezione).</li>
-                    <li>Si identifica il punto geometrico rappresentativo della città (centroide ISTAT).</li>
-                    <li>Si misura la distanza minima in linea d'aria tra questo punto e il segmento ferroviario più vicino attivo nell'anno selezionato.</li>
+                    <li>Si considera il <b>Capoluogo</b> (Regionale o Provinciale).</li>
+                    <li>Si misura la distanza minima in linea d'aria tra il centroide della città e la ferrovia.</li>
                 </ul>
-
-                <div class="formula-box">
-                    Formula:<br>
-                    D_cap = min(dist(Punto_Capoluogo, Rete_Ferroviaria))
-                </div>
-
-                <p class="text-muted small">Nota: Se la distanza è 0.0 km, significa che la ferrovia attraversa il territorio comunale del capoluogo.</p>
+                <div class="formula-box">D_cap = min(dist(Punto_Capoluogo, Rete))</div>
             `;
         }
         modal.style.display = "block";
     }
 
     function closeInfoModal(e) {
-        if (e.target.id === 'infoModal') {
-            document.getElementById('infoModal').style.display = 'none';
-        }
+        if (e.target.id === 'infoModal') document.getElementById('infoModal').style.display = 'none';
     }
 
     window.onload = function() {
@@ -317,6 +399,7 @@
         document.querySelectorAll('.nav-link').forEach(e => e.classList.remove('active'));
         event.currentTarget.classList.add('active');
         updateDashboard();
+        resizeCharts();
     }
 
     function updateDashboard() {
@@ -384,7 +467,6 @@
     function renderAccess(reg, prov, year) {
         const years = [...new Set(DB.access.map(d=>d.y))].sort();
         
-        // --- LOGICA ETICHETTE E FILTRI ---
         let filterTypeArea = 'Regione'; 
         let filterNameArea = reg;
         let filterNameCap = null;
@@ -395,7 +477,7 @@
         let lblCapChart = "Capoluogo";
 
         if(reg === 'ALL') {
-            lblAreaKPI = "Distanza media Comuni (Italia)";
+            lblAreaKPI = "Media Comuni (Italia)";
             lblAreaChart = "Media Italia";
             lblCapKPI = "-";
         } else if (prov === 'ALL') {
@@ -426,7 +508,10 @@
                 dataArea.push(entry ? entry.d : null);
             }
             if(filterNameCap) {
-                const entry = DB.access.find(d => d.y===y && d.n===filterNameCap); 
+                // Se siamo in vista Regione, cerchiamo il Capoluogo Regionale, altrimenti quello Provinciale
+                const targetType = (reg === 'ALL' || prov === 'ALL') ? 'Cap_Reg' : 'Cap_Prov';
+                
+                const entry = DB.access.find(d => d.y===y && d.n===filterNameCap && d.Type===targetType); 
                 dataCap.push(entry ? entry.d : null);
             }
         });
