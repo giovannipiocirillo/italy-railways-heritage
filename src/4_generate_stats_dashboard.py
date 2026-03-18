@@ -15,10 +15,11 @@ URL_MUNICIPALITIES = "https://raw.githubusercontent.com/openpolis/geojson-italy/
 # Output filenames
 OUTPUT_DB = "db_stats_dashboard.js"
 OUTPUT_HTML = "railways_stats.html"
+OUTPUT_LANG = "stats_translations.js" # Nuovo file traduzioni
 
 METRIC_CRS = "EPSG:3035" # Metric Coordinate Reference System for Europe
 
-# Regional Capitals (Keys must match Shapefile municipality names)
+# Regional Capitals
 REGION_CAPITALS = {
     'Torino': 'Piemonte', 'Aosta': "Valle d'Aosta", 'Milano': 'Lombardia', 'Trento': 'Trentino-Alto Adige/Südtirol',
     'Venezia': 'Veneto', 'Trieste': 'Friuli-Venezia Giulia', 'Genova': 'Liguria', 'Bologna': 'Emilia-Romagna',
@@ -29,10 +30,10 @@ REGION_CAPITALS = {
 
 def main():
     start_time = time.time()
-    print("🚀 STARTING PROCESSING - STATS DASHBOARD (WITH INFO MODALS)")
+    print("🚀 STARTING PROCESSING - STATS DASHBOARD (WITH I18N)")
     
     # 1. LOAD GEOGRAPHIC DATA
-    print("[1/5] 🌍 Downloading boundaries...")
+    print("[1/6] 🌍 Downloading boundaries...")
     try:
         gdf_regions = gpd.read_file(URL_REGIONS).to_crs(METRIC_CRS)
         gdf_provinces = gpd.read_file(URL_PROVINCES).to_crs(METRIC_CRS)
@@ -45,13 +46,11 @@ def main():
         gdf_regions['area_km2'] = gdf_regions.geometry.area / 10**6
         gdf_provinces['area_km2'] = gdf_provinces.geometry.area / 10**6
         
-        # Area Map
         meta_areas = {
             "reg": gdf_regions.set_index('reg_name')['area_km2'].to_dict(),
             "prov": gdf_provinces.set_index('prov_name')['area_km2'].to_dict()
         }
         
-        # Region -> Province Hierarchy Map
         structure_map = {}
         for _, row in gdf_provinces.iterrows():
             reg = row['reg_name']
@@ -65,7 +64,7 @@ def main():
         return
 
     # 2. LOAD RAILWAYS
-    print("[2/5] 🚂 Processing Railways...")
+    print("[2/6] 🚂 Processing Railways...")
     if not os.path.exists(FILE_SHP_RAIL): 
         print("❌ SHP File not found.")
         return
@@ -73,14 +72,12 @@ def main():
     rail = gpd.read_file(FILE_SHP_RAIL).to_crs(METRIC_CRS)
     rail = rail[rail['YearConstr'] > 0] 
     
-    # 3. INFRASTRUCTURE STATISTICS (EXACT CUT)
-    print("[3/5] ✂️ Exact cut at boundaries (Overlay)...")
+    # 3. INFRASTRUCTURE STATISTICS
+    print("[3/6] ✂️ Exact cut at boundaries (Overlay)...")
     
-    # A. Italian Part (Intersection)
     rail_italy = gpd.overlay(rail, gdf_provinces[['prov_name', 'reg_name', 'geometry']], how='intersection', keep_geom_type=True)
     rail_italy['new_length'] = rail_italy.geometry.length / 1000.0
     
-    # B. Abroad/Border Part (Difference)
     rail_abroad = gpd.overlay(rail, gdf_regions[['reg_name', 'geometry']], how='difference', keep_geom_type=True)
     rail_abroad['new_length'] = rail_abroad.geometry.length / 1000.0
     rail_abroad['reg_name'] = 'Estero/Confine'
@@ -97,7 +94,7 @@ def main():
                 "l": round(row['new_length'], 3),
                 "r": row['reg_name'] if pd.notnull(row['reg_name']) else "Estero",
                 "p": row['prov_name'] if pd.notnull(row['prov_name']) else "Estero",
-                "t": "Primaria" if is_main else "Secondaria" # Keep Italian tags for UI consistency
+                "t": "Primaria" if is_main else "Secondaria"
             })
 
     process_rail_df(rail_italy)
@@ -108,7 +105,7 @@ def main():
     meta_areas['prov']['Tratte di Confine'] = 1
 
     # 4. ACCESSIBILITY STATISTICS
-    print("[4/5] ⏱️ Accessibility Analysis (with Provinces)...")
+    print("[4/6] ⏱️ Accessibility Analysis (with Provinces)...")
     
     years_to_check = list(range(1839, 1913, 1)) 
     max_rail = int(rail['YearConstr'].max())
@@ -120,27 +117,23 @@ def main():
     caps_prov_df = gdf_municipalities[gdf_municipalities['name'] == gdf_municipalities['prov_name']].copy()
     
     access_data = []
-    
     total_steps = len(years_to_check)
+    
     for i, year in enumerate(years_to_check):
         print(f"      ...Year {year} ({i+1}/{total_steps})")
-        
         current_rail = rail[rail['YearConstr'] <= year]
         if current_rail.empty: continue
         
         rail_union = current_rail.union_all()
         
-        # Municipality Distances
         dists = gdf_municipalities.geometry.distance(rail_union)
         gdf_municipalities['temp_dist'] = dists
         
-        # Averages
         for name, val in gdf_municipalities.groupby('reg_name')['temp_dist'].mean().items():
-            access_data.append({"y": year, "n": name, "Type": "Regione", "d": round(val/1000, 2)}) # Type: Regione (IT)
+            access_data.append({"y": year, "n": name, "Type": "Regione", "d": round(val/1000, 2)})
         for name, val in gdf_municipalities.groupby('prov_name')['temp_dist'].mean().items():
-            access_data.append({"y": year, "n": name, "Type": "Provincia", "d": round(val/1000, 2)}) # Type: Provincia (IT)
+            access_data.append({"y": year, "n": name, "Type": "Provincia", "d": round(val/1000, 2)})
             
-        # Capitals
         dists_cr = caps_reg_df.geometry.distance(rail_union)
         for idx, val in dists_cr.items():
             city_name = caps_reg_df.loc[idx, 'name']
@@ -151,8 +144,165 @@ def main():
             city_name = caps_prov_df.loc[idx, 'name']
             access_data.append({"y": year, "n": city_name, "Type": "Cap_Prov", "d": round(val/1000, 2)})
 
-    # 5. WRITE DATA FILE (JS)
-    print(f"[5/5] 💾 Writing {OUTPUT_DB}...")
+    # 5. WRITING TRANSLATIONS JS
+    print(f"[5/6] 💾 Writing {OUTPUT_LANG}...")
+    translations_content = """
+const i18n = {
+    "it": {
+        "title": "Statistiche - Sviluppo Ferroviario Italiano (1839-1913)",
+        "nav_infra": "Infrastruttura",
+        "nav_access": "Accessibilità",
+        "lbl_reg": "REGIONE",
+        "lbl_prov": "PROVINCIA",
+        "lbl_year": "ANNO:",
+        "opt_all_it": "Tutta Italia",
+        "opt_all_prov": "Tutte le Province",
+        "btn_map": "Mappa",
+        "title_infra": "Sviluppo Rete Ferroviaria",
+        "kpi_tot": "Totale Costruito",
+        "kpi_new": "nell'anno",
+        "kpi_type": "Tipologia",
+        "kpi_prim": "Primaria",
+        "kpi_sec": "Secondaria",
+        "kpi_dens": "Densità",
+        "title_access": "Accessibilità Territoriale",
+        "desc_access": "Evoluzione della distanza media (in linea d'aria) dalla stazione ferroviaria più vicina.",
+        "kpi_dist_avg": "Distanza Media Territorio",
+        "kpi_dist_cap": "Distanza Capoluogo",
+        "lbl_italy": "Italia",
+        "chart_y_axis": "Km dalla stazione",
+        "dyn_avg_it": "Media Italia",
+        "dyn_avg_reg": "Media",
+        "dyn_avg_com_it": "Media Comuni (Italia)",
+        "dyn_avg_com": "Media Comuni",
+        "dyn_avg_prov": "Media Prov.",
+        "dyn_cap_reg": "Capoluogo Regionale",
+        "dyn_cap_prov": "Capoluogo Provinciale",
+        "dyn_cap": "Capoluogo",
+        "footer_curated": "A cura di",
+        "footer_data": "Dati:",
+        "modals": {
+            "area": {
+                "title": "ℹ️ Calcolo Distanza Media Territoriale",
+                "body": `
+                    <p>Questo indicatore misura il grado di penetrazione della ferrovia nel territorio selezionato (Regione o Provincia).</p>
+                    <strong>Metodologia:</strong>
+                    <ul>
+                        <li>Vengono considerati <b>tutti i Comuni</b> appartenenti all'area selezionata.</li>
+                        <li>Per ogni Comune, si calcola il <b>centroide geometrico</b>.</li>
+                        <li>Si misura la distanza in linea d'aria tra il centroide e il punto più vicino della rete ferroviaria.</li>
+                        <li>Si calcola la media aritmetica di queste distanze.</li>
+                    </ul>
+                    <div class="formula-box">D_media = (Σ dist(Centroide_i, Rete)) / N_comuni</div>
+                `
+            },
+            "cap": {
+                "title": "ℹ️ Calcolo Distanza Capoluogo",
+                "body": `
+                    <p>Misura l'isolamento del centro amministrativo principale.</p>
+                    <strong>Metodologia:</strong>
+                    <ul>
+                        <li>Si considera il <b>Capoluogo</b> (Regionale o Provinciale).</li>
+                        <li>Si misura la distanza minima in linea d'aria tra il centroide della città e la ferrovia.</li>
+                    </ul>
+                    <div class="formula-box">D_cap = min(dist(Punto_Capoluogo, Rete))</div>
+                `
+            }
+        }
+    },
+    "en": {
+        "title": "Statistics - Italian Railway Development (1839-1913)",
+        "nav_infra": "Infrastructure",
+        "nav_access": "Accessibility",
+        "lbl_reg": "REGION",
+        "lbl_prov": "PROVINCE",
+        "lbl_year": "YEAR:",
+        "opt_all_it": "All Italy",
+        "opt_all_prov": "All Provinces",
+        "btn_map": "Map",
+        "title_infra": "Railway Network Development",
+        "kpi_tot": "Total Built",
+        "kpi_new": "in the year",
+        "kpi_type": "Typology",
+        "kpi_prim": "Primary",
+        "kpi_sec": "Secondary",
+        "kpi_dens": "Density",
+        "title_access": "Territorial Accessibility",
+        "desc_access": "Evolution of the average distance (straight line) from the nearest railway station.",
+        "kpi_dist_avg": "Average Territory Distance",
+        "kpi_dist_cap": "Capital Distance",
+        "lbl_italy": "Italy",
+        "chart_y_axis": "Km from station",
+        "dyn_avg_it": "Italy Average",
+        "dyn_avg_reg": "Average",
+        "dyn_avg_com_it": "Municipalities Average (Italy)",
+        "dyn_avg_com": "Municipalities Average",
+        "dyn_avg_prov": "Prov. Average",
+        "dyn_cap_reg": "Regional Capital",
+        "dyn_cap_prov": "Provincial Capital",
+        "dyn_cap": "Capital",
+        "footer_curated": "Curated by",
+        "footer_data": "Data:",
+        "modals": {
+            "area": {
+                "title": "ℹ️ Territorial Average Distance Calculation",
+                "body": `
+                    <p>This indicator measures the degree of railway penetration in the selected territory (Region or Province).</p>
+                    <strong>Methodology:</strong>
+                    <ul>
+                        <li><b>All Municipalities</b> belonging to the selected area are considered.</li>
+                        <li>For each Municipality, the <b>geometric centroid</b> is calculated.</li>
+                        <li>The straight-line distance between the centroid and the closest point of the railway network is measured.</li>
+                        <li>The arithmetic mean of these distances is calculated.</li>
+                    </ul>
+                    <div class="formula-box">D_avg = (Σ dist(Centroid_i, Network)) / N_municipalities</div>
+                `
+            },
+            "cap": {
+                "title": "ℹ️ Capital Distance Calculation",
+                "body": `
+                    <p>Measures the isolation of the main administrative center.</p>
+                    <strong>Methodology:</strong>
+                    <ul>
+                        <li>The <b>Capital</b> (Regional or Provincial) is considered.</li>
+                        <li>The minimum straight-line distance between the city's centroid and the railway is measured.</li>
+                    </ul>
+                    <div class="formula-box">D_cap = min(dist(Capital_Point, Network))</div>
+                `
+            }
+        }
+    }
+};
+
+let currentLang = "it";
+
+function setLanguage(lang) {
+    currentLang = lang;
+    
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(i18n[lang][key]) {
+            el.innerHTML = i18n[lang][key];
+        }
+    });
+    
+    document.title = i18n[lang]["title"];
+    
+    // Update dynamically created texts in DOM
+    if (document.getElementById('opt-all-reg')) {
+        document.getElementById('opt-all-reg').innerText = i18n[lang].opt_all_it;
+    }
+    
+    if (typeof updateDashboard === "function") {
+        updateDashboard();
+    }
+}
+"""
+    with open(OUTPUT_LANG, "w", encoding="utf-8") as f:
+        f.write(translations_content)
+
+    # 6. WRITE DATA FILE (JS)
+    print(f"[6/6] 💾 Writing {OUTPUT_DB} and {OUTPUT_HTML}...")
     final_db = {
         "meta": meta_areas,
         "structure": structure_map,
@@ -164,10 +314,7 @@ def main():
     with open(OUTPUT_DB, "w", encoding="utf-8") as f:
         f.write(f"const DB = {json.dumps(final_db)};")
 
-    # 6. WRITE DASHBOARD FILE (HTML)
-    print(f"      💾 Writing {OUTPUT_HTML}...")
-    
-    # HTML Content
+    # 7. WRITE DASHBOARD FILE (HTML)
     html_content = r"""<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -179,6 +326,7 @@ def main():
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <script src="stats_translations.js"></script>
     <script src="db_stats_dashboard.js"></script>
 
     <style>
@@ -189,7 +337,7 @@ def main():
             --text-sidebar: #ecf0f1;
             
             --sidebar-width: 280px;
-            --sidebar-mini-width: 60px; /* Larghezza striscia */
+            --sidebar-mini-width: 60px;
         }
         
         body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
@@ -201,105 +349,54 @@ def main():
             background-color: var(--bg-sidebar); 
             color: var(--text-sidebar);
             padding: 20px 15px; 
-            overflow-y: auto; 
-            overflow-x: hidden;
-            z-index: 1000;
-            transition: width 0.3s ease, transform 0.3s ease;
+            overflow-y: auto; overflow-x: hidden;
+            z-index: 1000; transition: width 0.3s ease, transform 0.3s ease;
             display: flex; flex-direction: column;
         }
         
         .main-content { 
-            margin-left: var(--sidebar-width); 
-            padding: 25px; 
-            min-height: 100vh; 
-            transition: margin-left 0.3s ease; 
+            margin-left: var(--sidebar-width); padding: 25px; 
+            min-height: 100vh; transition: margin-left 0.3s ease; 
         }
 
-        /* --- DESKTOP MINIMIZED STATE (STRISCIA) --- */
-        body.sidebar-collapsed .sidebar {
-            width: var(--sidebar-mini-width);
-            padding: 20px 5px; /* Meno padding laterale */
-        }
-        
-        body.sidebar-collapsed .main-content {
-            margin-left: var(--sidebar-mini-width);
-        }
-        
-        /* Nascondi testi e controlli in modalità mini */
-        body.sidebar-collapsed .hide-on-mini {
-            display: none !important;
-            opacity: 0;
-        }
-        
-        /* Centra le icone in modalità mini */
-        body.sidebar-collapsed .nav-link {
-            text-align: center;
-            padding-left: 0; padding-right: 0;
-        }
-        body.sidebar-collapsed .nav-link i {
-            margin-right: 0 !important;
-            font-size: 1.2rem;
-        }
-        
-        /* Centra il toggle button in modalità mini */
-        body.sidebar-collapsed .sidebar-header {
-            justify-content: center !important;
-        }
+        /* --- DESKTOP MINIMIZED --- */
+        body.sidebar-collapsed .sidebar { width: var(--sidebar-mini-width); padding: 20px 5px; }
+        body.sidebar-collapsed .main-content { margin-left: var(--sidebar-mini-width); }
+        body.sidebar-collapsed .hide-on-mini { display: none !important; opacity: 0; }
+        body.sidebar-collapsed .nav-link { text-align: center; padding-left: 0; padding-right: 0; }
+        body.sidebar-collapsed .nav-link i { margin-right: 0 !important; font-size: 1.2rem; }
+        body.sidebar-collapsed .sidebar-header { justify-content: center !important; }
 
-        /* --- MOBILE STYLES (< 992px) --- */
+        /* --- MOBILE STYLES --- */
         .mobile-toggle { display: none; }
         
         @media (max-width: 991.98px) {
-            /* Sidebar nascosta default su mobile */
-            .sidebar {
-                transform: translateX(-100%);
-                width: var(--sidebar-width) !important; /* Sempre larga quando aperta su mobile */
-            }
-            .main-content {
-                margin-left: 0 !important;
-                padding-top: 70px;
-            }
+            .sidebar { transform: translateX(-100%); width: var(--sidebar-width) !important; }
+            .main-content { margin-left: 0 !important; padding-top: 70px; }
             
-            /* Bottone Toggle Mobile (Fluttuante) */
             .mobile-toggle {
-                display: block;
-                position: fixed; top: 15px; left: 15px; z-index: 1100;
+                display: block; position: fixed; top: 15px; left: 15px; z-index: 1100;
                 background-color: var(--color-primary); color: white;
                 border: none; border-radius: 5px; padding: 10px 15px;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             }
-            
-            /* Nascondi bottone desktop su mobile */
             .desktop-toggle { display: none !important; }
-
-            /* Stato APERTO su Mobile */
-            body.sidebar-open .sidebar {
-                transform: translateX(0);
-            }
+            body.sidebar-open .sidebar { transform: translateX(0); }
             
-            /* Overlay */
             .sidebar-overlay {
-                display: none;
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                 background: rgba(0,0,0,0.5); z-index: 900;
             }
             body.sidebar-open .sidebar-overlay { display: block; }
         }
 
         /* --- COMPONENTS --- */
-        .card-kpi {
-            background: white; border: none; border-radius: 10px; padding: 20px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; position: relative;
-        }
-        .chart-container {
-            background: white; border-radius: 10px; padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; height: 400px;
-        }
+        .card-kpi { background: white; border: none; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; position: relative; }
+        .chart-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; height: 400px; }
         .section-view { display: none; }
         .section-view.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Controls */
         .sidebar .form-select, .sidebar .form-range { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; }
         .sidebar option { background: var(--bg-sidebar); }
         .nav-pills .nav-link.active { background-color: var(--color-primary); }
@@ -309,30 +406,29 @@ def main():
         .info-btn:hover { color: var(--color-secondary); }
 
         .link-btn {
-            align-self: center; background: #2c3e50; color: #fff; text-decoration: none;
+            align-self: center; background: #1a252f; color: #fff; text-decoration: none;
             padding: 12px 20px; border-radius: 30px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2);
             width: 100%; text-align: center; display: flex; justify-content: center; align-items: center; gap: 10px;
+            transition: all 0.3s ease;
         }
         .link-btn:hover { background: #34495e; color: #fff; transform: translateY(-2px); }
         
         .map-footer { margin-top: 40px; padding: 20px 0; text-align: center; font-size: 11px; color: #7f8c8d; border-top: 1px solid #ddd; }
         .map-footer a { color: #2980b9; text-decoration: none; font-weight: 500; }
 
-        /* MODAL */
         .modal-custom { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
         .modal-custom-content { background-color: #fefefe; margin: 10% auto; padding: 30px; border-radius: 15px; width: 600px; max-width: 90%; animation: slideDown 0.3s; }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .close-modal { color: #aaa; float: right; font-size: 28px; cursor: pointer; }
         .formula-box { background: #f8f9fa; padding: 15px; border-left: 4px solid var(--color-secondary); margin: 15px 0; font-family: monospace; }
+        
+        .lang-switch button.active { font-weight: bold; background-color: #3498db; border-color: #3498db; }
     </style>
 </head>
-<body>
+<body onload="setLanguage('it')">
 
 <div class="sidebar-overlay" onclick="toggleSidebarMobile()"></div>
-
-<button class="mobile-toggle" onclick="toggleSidebarMobile()">
-    <i class="fas fa-bars"></i>
-</button>
+<button class="mobile-toggle" onclick="toggleSidebarMobile()"><i class="fas fa-bars"></i></button>
 
 <div id="infoModal" class="modal-custom" onclick="closeInfoModal(event)">
     <div class="modal-custom-content">
@@ -343,51 +439,51 @@ def main():
 </div>
 
 <div class="sidebar">
-    <div class="sidebar-header d-flex justify-content-between align-items-center mb-4" style="min-height: 40px;">
+    <div class="sidebar-header d-flex justify-content-between align-items-center mb-3" style="min-height: 40px;">
         <h5 class="text-white m-0 hide-on-mini" style="font-size: 1.1rem;"><i class="fas fa-train me-2"></i>Italy Railways Heritage</h5>
-        
-        <button class="btn btn-sm btn-outline-light desktop-toggle" onclick="toggleSidebarDesktop()" title="Riduci/Espandi">
-            <i class="fas fa-bars"></i>
-        </button>
-        
-        <button class="btn btn-sm btn-outline-light d-lg-none" onclick="toggleSidebarMobile()">
-            <i class="fas fa-times"></i>
-        </button>
+        <button class="btn btn-sm btn-outline-light desktop-toggle" onclick="toggleSidebarDesktop()" title="Toggle"><i class="fas fa-bars"></i></button>
+        <button class="btn btn-sm btn-outline-light d-lg-none" onclick="toggleSidebarMobile()"><i class="fas fa-times"></i></button>
+    </div>
+    
+    <div class="lang-switch text-center mb-4 hide-on-mini">
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-light active" id="btn-it" onclick="switchLangUI('it')">IT</button>
+            <button type="button" class="btn btn-outline-light" id="btn-en" onclick="switchLangUI('en')">EN</button>
+        </div>
     </div>
     
     <div class="nav flex-column nav-pills mb-4">
         <a class="nav-link active" href="#" onclick="setView('infra')">
-            <i class="fas fa-chart-bar me-2"></i> <span class="hide-on-mini">Infrastruttura</span>
+            <i class="fas fa-chart-bar me-2"></i> <span class="hide-on-mini" data-i18n="nav_infra">Infrastruttura</span>
         </a>
         <a class="nav-link" href="#" onclick="setView('access')">
-            <i class="fas fa-map-marked-alt me-2"></i> <span class="hide-on-mini">Accessibilità</span>
+            <i class="fas fa-map-marked-alt me-2"></i> <span class="hide-on-mini" data-i18n="nav_access">Accessibilità</span>
         </a>
     </div>
 
     <div class="hide-on-mini">
         <div class="mb-3">
-            <label class="form-label text-white-50 small">REGIONE</label>
+            <label class="form-label text-white-50 small" data-i18n="lbl_reg">REGIONE</label>
             <select id="sel-reg" class="form-select" onchange="onRegionChange()">
-                <option value="ALL">Tutta Italia</option>
+                <option value="ALL" id="opt-all-reg" data-i18n="opt_all_it">Tutta Italia</option>
             </select>
         </div>
 
         <div class="mb-4">
-            <label class="form-label text-white-50 small">PROVINCIA</label>
+            <label class="form-label text-white-50 small" data-i18n="lbl_prov">PROVINCIA</label>
             <select id="sel-prov" class="form-select" disabled onchange="updateDashboard()">
-                <option value="ALL">Tutte le Province</option>
-            </select>
+                </select>
         </div>
 
         <div class="mb-2">
-            <label class="form-label text-white small">ANNO: <span id="lbl-year" class="fw-bold text-warning">1913</span></label>
+            <label class="form-label text-white small"><span data-i18n="lbl_year">ANNO:</span> <span id="lbl-year" class="fw-bold text-warning">1913</span></label>
             <input type="range" class="form-range" id="range-year" min="1839" max="1913" value="1913" oninput="updateDashboard()">
         </div>
     </div>
 
     <div class="mt-auto pt-3">
-        <a href="index.html" class="link-btn" title="Torna alla mappa">
-            <span>🗺️</span> <span class="hide-on-mini">Mappa</span>
+        <a href="index.html" class="link-btn">
+            <span>🗺️</span> <span class="hide-on-mini" data-i18n="btn_map">Mappa</span>
         </a>
     </div>
 </div>
@@ -395,30 +491,30 @@ def main():
 <div class="main-content">
     
     <div id="view-infra" class="section-view active">
-        <h3 class="fw-bold mb-4">Sviluppo Rete Ferroviaria</h3>
+        <h3 class="fw-bold mb-4" data-i18n="title_infra">Sviluppo Rete Ferroviaria</h3>
         
         <div class="row mb-4 g-3">
             <div class="col-md-4">
                 <div class="card-kpi border-start border-4 border-danger">
-                    <small class="text-uppercase text-muted">Totale Costruito</small>
+                    <small class="text-uppercase text-muted" data-i18n="kpi_tot">Totale Costruito</small>
                     <div class="fs-2 fw-bold text-dark"><span id="kpi-tot">0</span> km</div>
-                    <small class="text-success"><span id="kpi-new">+0</span> km nell'anno</small>
+                    <small class="text-success"><span id="kpi-new">+0</span> km <span data-i18n="kpi_new">nell'anno</span></small>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card-kpi border-start border-4 border-primary">
-                    <small class="text-uppercase text-muted">Tipologia</small>
+                    <small class="text-uppercase text-muted" data-i18n="kpi_type">Tipologia</small>
                     <div class="mt-2">
-                        <div class="d-flex justify-content-between small fw-bold text-danger"><span>Primaria</span> <span id="kpi-pp">0%</span></div>
+                        <div class="d-flex justify-content-between small fw-bold text-danger"><span data-i18n="kpi_prim">Primaria</span> <span id="kpi-pp">0%</span></div>
                         <div class="progress mb-2" style="height:5px"><div id="bar-p" class="progress-bar bg-danger" style="width:0%"></div></div>
-                        <div class="d-flex justify-content-between small fw-bold text-primary"><span>Secondaria</span> <span id="kpi-ps">0%</span></div>
+                        <div class="d-flex justify-content-between small fw-bold text-primary"><span data-i18n="kpi_sec">Secondaria</span> <span id="kpi-ps">0%</span></div>
                         <div class="progress" style="height:5px"><div id="bar-s" class="progress-bar bg-primary" style="width:0%"></div></div>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card-kpi">
-                    <small class="text-uppercase text-muted">Densità</small>
+                    <small class="text-uppercase text-muted" data-i18n="kpi_dens">Densità</small>
                     <div class="fs-2 fw-bold text-dark" id="kpi-dens">0</div>
                     <small class="text-muted">m / km²</small>
                 </div>
@@ -432,8 +528,8 @@ def main():
     </div>
 
     <div id="view-access" class="section-view">
-        <h3 class="fw-bold mb-4">Accessibilità Territoriale</h3>
-        <p class="text-muted">Evoluzione della distanza media (in linea d'aria) dalla stazione ferroviaria più vicina.</p>
+        <h3 class="fw-bold mb-4" data-i18n="title_access">Accessibilità Territoriale</h3>
+        <p class="text-muted" data-i18n="desc_access">Evoluzione della distanza media (in linea d'aria) dalla stazione ferroviaria più vicina.</p>
 
         <div class="chart-container">
             <canvas id="chart-access"></canvas>
@@ -443,7 +539,7 @@ def main():
             <div class="col-md-6">
                 <div class="card-kpi border-bottom border-4 border-warning">
                     <div class="d-flex justify-content-between align-items-start">
-                        <small class="text-uppercase text-muted">Distanza Media Territorio</small>
+                        <small class="text-uppercase text-muted" data-i18n="kpi_dist_avg">Distanza Media Territorio</small>
                         <i class="fas fa-info-circle info-btn" onclick="showInfo('area')"></i>
                     </div>
                     <div class="fs-2 fw-bold text-dark" id="acc-val-avg">-</div>
@@ -453,7 +549,7 @@ def main():
             <div class="col-md-6">
                 <div class="card-kpi border-bottom border-4 border-dark">
                     <div class="d-flex justify-content-between align-items-start">
-                        <small class="text-uppercase text-muted">Distanza Capoluogo</small>
+                        <small class="text-uppercase text-muted" data-i18n="kpi_dist_cap">Distanza Capoluogo</small>
                         <i class="fas fa-info-circle info-btn" onclick="showInfo('cap')"></i>
                     </div>
                     <div class="fs-2 fw-bold text-dark" id="acc-val-cap">-</div>
@@ -463,8 +559,8 @@ def main():
         </div>
     </div>
     <div class="map-footer">
-        A cura di <a href="https://www.linkedin.com/in/giovanni-pio-cirillo" target="_blank">Giovanni Pio Cirillo</a> | 
-        Dati: <a href="https://www.rivisteweb.it/doi/10.1410/86763" target="_blank">Ciccarelli & Groote (2017)</a>, <a href="https://direct.mit.edu/rest/article-abstract/94/1/20/57988/Ruggedness-The-Blessing-of-Bad-Geography-in-Africa?redirectedFrom=fulltext" target="_blank">Nunn & Puga (2012)</a>, <a href="https://gaez.fao.org" target="blank">FAO GAEZ v4</a>, <a href="https://github.com/openpolis/geojson-italy" target="blank">OpenPolis</a>
+        <span data-i18n="footer_curated">A cura di</span> <a href="https://www.linkedin.com/in/giovanni-pio-cirillo" target="_blank">Giovanni Pio Cirillo</a> | 
+        <span data-i18n="footer_data">Dati:</span> <a href="https://www.rivisteweb.it/doi/10.1410/86763" target="_blank">Ciccarelli & Groote (2017)</a>, <a href="https://direct.mit.edu/rest/article-abstract/94/1/20/57988/Ruggedness-The-Blessing-of-Bad-Geography-in-Africa?redirectedFrom=fulltext" target="_blank">Nunn & Puga (2012)</a>, <a href="https://gaez.fao.org" target="blank">FAO GAEZ v4</a>, <a href="https://github.com/openpolis/geojson-italy" target="blank">OpenPolis</a>
     </div>
 </div>
 
@@ -472,74 +568,31 @@ def main():
     let charts = {};
     let currentView = 'infra';
 
-    // --- LOGICA SIDEBAR & RESPONSIVE ---
-    
-    // Desktop: Mini Sidebar Toggle
-    function toggleSidebarDesktop() {
-        document.body.classList.toggle('sidebar-collapsed');
-        resizeCharts();
+    function switchLangUI(lang) {
+        document.getElementById('btn-it').classList.remove('active');
+        document.getElementById('btn-en').classList.remove('active');
+        document.getElementById('btn-' + lang).classList.add('active');
+        setLanguage(lang); // Triggera l'aggiornamento automatico
     }
 
-    // Mobile: Off-canvas Toggle
-    function toggleSidebarMobile() {
-        document.body.classList.toggle('sidebar-open');
-    }
-    
-    // Utility per ridimensionare i grafici quando cambia lo spazio
-    function resizeCharts() {
-        setTimeout(() => {
-            Object.values(charts).forEach(c => c.resize());
-        }, 300);
-    }
+    function toggleSidebarDesktop() { document.body.classList.toggle('sidebar-collapsed'); resizeCharts(); }
+    function toggleSidebarMobile() { document.body.classList.toggle('sidebar-open'); }
+    function resizeCharts() { setTimeout(() => { Object.values(charts).forEach(c => c.resize()); }, 300); }
 
-    // --- LOGICA MODAL INFO ---
     function showInfo(type) {
         const modal = document.getElementById('infoModal');
-        const title = document.getElementById('modalTitle');
-        const body = document.getElementById('modalBody');
-        
-        if (type === 'area') {
-            title.innerHTML = "ℹ️ Calcolo Distanza Media Territoriale";
-            body.innerHTML = `
-                <p>Questo indicatore misura il grado di penetrazione della ferrovia nel territorio selezionato (Regione o Provincia).</p>
-                <strong>Metodologia:</strong>
-                <ul>
-                    <li>Vengono considerati <b>tutti i Comuni</b> appartenenti all'area selezionata.</li>
-                    <li>Per ogni Comune, si calcola il <b>centroide geometrico</b>.</li>
-                    <li>Si misura la distanza in linea d'aria tra il centroide e il punto più vicino della rete ferroviaria.</li>
-                    <li>Si calcola la media aritmetica di queste distanze.</li>
-                </ul>
-                <div class="formula-box">D_media = (Σ dist(Centroide_i, Rete)) / N_comuni</div>
-            `;
-        } else {
-            title.innerHTML = "ℹ️ Calcolo Distanza Capoluogo";
-            body.innerHTML = `
-                <p>Misura l'isolamento del centro amministrativo principale.</p>
-                <strong>Metodologia:</strong>
-                <ul>
-                    <li>Si considera il <b>Capoluogo</b> (Regionale o Provinciale).</li>
-                    <li>Si misura la distanza minima in linea d'aria tra il centroide della città e la ferrovia.</li>
-                </ul>
-                <div class="formula-box">D_cap = min(dist(Punto_Capoluogo, Rete))</div>
-            `;
-        }
+        document.getElementById('modalTitle').innerHTML = i18n[currentLang].modals[type].title;
+        document.getElementById('modalBody').innerHTML = i18n[currentLang].modals[type].body;
         modal.style.display = "block";
     }
-
-    function closeInfoModal(e) {
-        if (e.target.id === 'infoModal') document.getElementById('infoModal').style.display = 'none';
-    }
+    function closeInfoModal(e) { if (e.target.id === 'infoModal') document.getElementById('infoModal').style.display = 'none'; }
 
     window.onload = function() {
         if(typeof DB === 'undefined') { alert("Esegui Python prima per generare db_stats_dashboard.js!"); return; }
         
-        // Popola Regioni
         const selReg = document.getElementById('sel-reg');
-        Object.keys(DB.structure).sort().forEach(r => {
-            selReg.add(new Option(r, r));
-        });
+        Object.keys(DB.structure).sort().forEach(r => { selReg.add(new Option(r, r)); });
 
-        // Set Slider Anno
         const maxYear = Math.max(...DB.infra.map(d=>d.y));
         document.getElementById('range-year').max = maxYear;
         
@@ -549,15 +602,13 @@ def main():
     function onRegionChange() {
         const reg = document.getElementById('sel-reg').value;
         const selProv = document.getElementById('sel-prov');
-        selProv.innerHTML = '<option value="ALL">Tutte le Province</option>';
+        selProv.innerHTML = `<option value="ALL">${i18n[currentLang].opt_all_prov}</option>`;
         
         if(reg === 'ALL') {
             selProv.disabled = true;
         } else {
             selProv.disabled = false;
-            if(DB.structure[reg]) {
-                DB.structure[reg].forEach(p => selProv.add(new Option(p, p)));
-            }
+            if(DB.structure[reg]) { DB.structure[reg].forEach(p => selProv.add(new Option(p, p))); }
         }
         updateDashboard();
     }
@@ -582,7 +633,6 @@ def main():
         else renderAccess(reg, prov, year);
     }
 
-    // --- INFRA ---
     function renderInfra(reg, prov, year) {
         const data = DB.infra.filter(d => d.y <= year && (reg==='ALL'||d.r===reg) && (prov==='ALL'||d.p===prov));
         
@@ -609,7 +659,9 @@ def main():
         let area = reg==='ALL' ? 302000 : (prov==='ALL' ? DB.meta.reg[reg] : DB.meta.prov[prov]);
         document.getElementById('kpi-dens').innerText = ((tot/(area||1))*1000).toFixed(1);
 
-        // Chart History
+        const labelPrim = i18n[currentLang].kpi_prim;
+        const labelSec = i18n[currentLang].kpi_sec;
+
         const labels = Object.keys(hist).sort();
         if(charts.hist) charts.hist.destroy();
         charts.hist = new Chart(document.getElementById('chart-hist'), {
@@ -617,23 +669,21 @@ def main():
             data: {
                 labels: labels,
                 datasets: [
-                    { label:'Primarie', data: labels.map(l=>hist[l].p), backgroundColor:'#e74c3c', stack:'0' },
-                    { label:'Secondarie', data: labels.map(l=>hist[l].s), backgroundColor:'#3498db', stack:'0' }
+                    { label: labelPrim, data: labels.map(l=>hist[l].p), backgroundColor:'#e74c3c', stack:'0' },
+                    { label: labelSec, data: labels.map(l=>hist[l].s), backgroundColor:'#3498db', stack:'0' }
                 ]
             },
             options: { responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true}, y:{stacked:true}} }
         });
 
-        // Chart Pie
         if(charts.pie) charts.pie.destroy();
         charts.pie = new Chart(document.getElementById('chart-pie'), {
             type: 'doughnut',
-            data: { labels:['Primarie','Secondarie'], datasets:[{data:[pKm,sKm], backgroundColor:['#e74c3c','#3498db']}] },
+            data: { labels:[labelPrim, labelSec], datasets:[{data:[pKm,sKm], backgroundColor:['#e74c3c','#3498db']}] },
             options: { maintainAspectRatio:false }
         });
     }
 
-    // --- ACCESS ---
     function renderAccess(reg, prov, year) {
         const years = [...new Set(DB.access.map(d=>d.y))].sort();
         
@@ -641,29 +691,29 @@ def main():
         let filterNameArea = reg;
         let filterNameCap = null;
         
-        let lblAreaKPI = "Media Italia";
-        let lblCapKPI = "Capoluogo";
-        let lblAreaChart = "Media Italia";
-        let lblCapChart = "Capoluogo";
+        let lblAreaKPI = i18n[currentLang].dyn_avg_it;
+        let lblCapKPI = i18n[currentLang].dyn_cap;
+        let lblAreaChart = i18n[currentLang].dyn_avg_it;
+        let lblCapChart = i18n[currentLang].dyn_cap;
 
         if(reg === 'ALL') {
-            lblAreaKPI = "Media Comuni (Italia)";
-            lblAreaChart = "Media Italia";
+            lblAreaKPI = i18n[currentLang].dyn_avg_com_it;
+            lblAreaChart = i18n[currentLang].dyn_avg_it;
             lblCapKPI = "-";
         } else if (prov === 'ALL') {
-            lblAreaKPI = "Media Comuni (" + reg + ")";
-            lblAreaChart = "Media " + reg;
+            lblAreaKPI = i18n[currentLang].dyn_avg_com + " (" + reg + ")";
+            lblAreaChart = i18n[currentLang].dyn_avg_reg + " " + reg;
             for(let [c, r] of Object.entries(DB.capoluoghi_map)) if(r===reg) filterNameCap = c;
-            lblCapKPI = "Capoluogo Regionale (" + (filterNameCap || '-') + ")";
-            lblCapChart = "Capoluogo (" + (filterNameCap || '-') + ")";
+            lblCapKPI = i18n[currentLang].dyn_cap_reg + " (" + (filterNameCap || '-') + ")";
+            lblCapChart = i18n[currentLang].dyn_cap + " (" + (filterNameCap || '-') + ")";
         } else {
             filterTypeArea = 'Provincia';
             filterNameArea = prov;
             filterNameCap = prov; 
-            lblAreaKPI = "Media Comuni (Prov. " + prov + ")";
-            lblAreaChart = "Media Prov. " + prov;
-            lblCapKPI = "Capoluogo Provinciale (" + prov + ")";
-            lblCapChart = "Capoluogo (" + prov + ")";
+            lblAreaKPI = i18n[currentLang].dyn_avg_com + " (" + prov + ")";
+            lblAreaChart = i18n[currentLang].dyn_avg_prov + " " + prov;
+            lblCapKPI = i18n[currentLang].dyn_cap_prov + " (" + prov + ")";
+            lblCapChart = i18n[currentLang].dyn_cap + " (" + prov + ")";
         }
 
         const dataArea = [];
@@ -678,9 +728,7 @@ def main():
                 dataArea.push(entry ? entry.d : null);
             }
             if(filterNameCap) {
-                // Se siamo in vista Regione, cerchiamo il Capoluogo Regionale, altrimenti quello Provinciale
                 const targetType = (reg === 'ALL' || prov === 'ALL') ? 'Cap_Reg' : 'Cap_Prov';
-                
                 const entry = DB.access.find(d => d.y===y && d.n===filterNameCap && d.Type===targetType); 
                 dataCap.push(entry ? entry.d : null);
             }
@@ -722,6 +770,8 @@ def main():
             });
         }
 
+        const chartYAxisLabel = i18n[currentLang].chart_y_axis;
+
         charts.access = new Chart(document.getElementById('chart-access'), {
             type: 'line',
             data: { labels: viewYears, datasets: datasets },
@@ -729,7 +779,7 @@ def main():
                 responsive: true, 
                 maintainAspectRatio: false, 
                 scales: { 
-                    y: { title: { display: true, text: 'Km dalla stazione' }, beginAtZero: true } 
+                    y: { title: { display: true, text: chartYAxisLabel }, beginAtZero: true } 
                 },
                 plugins: {
                     legend: { position: 'top' }
